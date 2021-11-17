@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31729.503
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Archivers", "Archivers\Archivers.csproj", "{463805A2-0E14-484D-BFE1-7B10AC5D5562}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArchiversTests", "ArchiversTests\ArchiversTests.csproj", "{C4DB345E-F9F5-4776-8F62-0635690463D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{463805A2-0E14-484D-BFE1-7B10AC5D5562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{463805A2-0E14-484D-BFE1-7B10AC5D5562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{463805A2-0E14-484D-BFE1-7B10AC5D5562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{463805A2-0E14-484D-BFE1-7B10AC5D5562}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4DB345E-F9F5-4776-8F62-0635690463D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4DB345E-F9F5-4776-8F62-0635690463D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4DB345E-F9F5-4776-8F62-0635690463D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4DB345E-F9F5-4776-8F62-0635690463D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E5E7021-548E-4358-B954-B619E12500AB}
+	EndGlobalSection
+EndGlobal
