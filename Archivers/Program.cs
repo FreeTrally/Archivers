@@ -8,6 +8,16 @@ namespace Archivers
     {
         static void Main(string[] args)
         {
+            var ar = new HuffmanArchiver();
+            //Console.WriteLine(ar.Compress("your_struggles_are_futile"));
+            var res = ar.Compress("Welcome to the Archive service   Menu:   1. Use LZW archiver;    2. Use all archivers;");
+            Console.WriteLine(res);
+            Console.WriteLine(ar.Decompress(res));
+            //Handle();
+        }
+
+        private static void Handle()
+        {
             Console.WriteLine("Welcome to the Archive service");
             Console.WriteLine("Menu: ");
             Console.WriteLine("1. Use LZW archiver;");
