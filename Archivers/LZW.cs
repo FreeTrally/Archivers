@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -7,66 +8,82 @@ namespace Archivers
 {
     public class LZW
     {
-        public List<int> Compress(string uncompressed)
+        public string Compress(string uncompressed)
         {
-            // build the dictionary
-            var dictionary = new Dictionary<string, int>();
-            for (var i = 0; i < 256; i++)
-                dictionary.Add(((char)i).ToString(), i);
+            if (uncompressed.Length == 0)
+                return string.Empty;
+            var dictionary = GetInitialDictionaryBySymbol();
 
-            var w = string.Empty;
+            var current = string.Empty;
             var compressed = new List<int>();
 
-            foreach (var c in uncompressed)
+            foreach (var ch in uncompressed)
             {
-                var wc = w + c;
-                if (dictionary.ContainsKey(wc))
-                    w = wc;
+                var workingString = current + ch;
+                if (dictionary.ContainsKey(workingString))
+                    current = workingString;
                 else
                 {
-                    // write w to output
-                    compressed.Add(dictionary[w]);
-                    // wc is a new sequence; add it to the dictionary
-                    dictionary.Add(wc, dictionary.Count);
-                    w = c.ToString();
+                    compressed.Add(dictionary[current]);
+                    dictionary.Add(workingString, dictionary.Count);
+                    current = ch.ToString();
                 }
             }
 
             // write remaining output if necessary
-            if (!string.IsNullOrEmpty(w))
-                compressed.Add(dictionary[w]);
+            if (!string.IsNullOrEmpty(current))
+                compressed.Add(dictionary[current]);
 
-            return compressed;
+            return string.Join(',', compressed);
         }
 
-        public string Decompress(List<int> compressed)
+        public string Decompress(string compressed)
         {
-            // build the dictionary
-            var dictionary = new Dictionary<int, string>();
-            for (var i = 0; i < 256; i++)
-                dictionary.Add(i, ((char)i).ToString());
+            if (compressed.Length == 0)
+                return string.Empty;
 
-            var w = dictionary[compressed[0]];
-            compressed.RemoveAt(0);
-            var decompressed = new StringBuilder(w);
+            var dict = GetInitialDictionaryByIndex();
 
-            foreach (var k in compressed)
+            var indexes = compressed.Split(',').Select(ch => int.Parse(ch)).ToList();
+
+            var workingString = dict[indexes[0]];
+            indexes.RemoveAt(0);
+
+            var decompressed = new StringBuilder(workingString);
+
+            foreach (var index in indexes)
             {
                 string entry = null;
-                if (dictionary.ContainsKey(k))
-                    entry = dictionary[k];
-                else if (k == dictionary.Count)
-                    entry = w + w[0];
+                if (dict.ContainsKey(index))
+                    entry = dict[index];
+                else if (index == dict.Count)
+                    entry = workingString + workingString[0];
 
                 decompressed.Append(entry);
 
                 // new sequence; add it to the dictionary
-                dictionary.Add(dictionary.Count, w + entry?.FirstOrDefault());
+                dict.Add(dict.Count, workingString + entry?.FirstOrDefault());
 
-                w = entry;
+                workingString = entry;
             }
 
             return decompressed.ToString();
+        }
+
+        private static Dictionary<string, int> GetInitialDictionaryBySymbol()
+        {
+            var dict = new Dictionary<string, int>();
+            for (var i = 0; i < 256; i++)
+                dict.Add(((char)i).ToString(), i);
+            return dict;
+        }
+
+        private static Dictionary<int, string> GetInitialDictionaryByIndex()
+        {
+            var dict = new Dictionary<int, string>();
+            for (var i = 0; i < 256; i++)
+                dict.Add(i, ((char)i).ToString());
+            return dict;
         }
     }
 }
