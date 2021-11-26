@@ -5,26 +5,38 @@ using System.Text;
 
 namespace Archivers
 {
-    public class HuffmanArchiver : IArchiver
+    public class Huffman : IArchiver
     {
-        private Dictionary<char, string> symbolCodes = new();
-        private Dictionary<string, char> codeSymbols = new();
-        private Dictionary<char, int> symbolsCount = new();
-        private Dictionary<string, int> availableLeaves = new();
-        private string input;
+        private readonly Dictionary<char, string> symbolCodes = new();
+        private readonly Dictionary<string, char> codeSymbols = new();
+        private readonly Dictionary<char, int> symbolsCount = new();
+        private readonly Dictionary<string, int> availableLeaves = new();
 
         public string Compress(string data)
         {
-            input = data;
-
             CalculateFrequency(data);
+            var result = CalculateResult(data);
 
-            return CalculateResult();
+            return result;
         }
 
         public string Decompress(string data)
         {
             return DecodeResult(data);
+        }
+
+        private void CalculateFrequency(string data)
+        {
+            foreach (var ch in data)
+            {
+                symbolCodes.TryAdd(ch, "");
+                symbolsCount[ch] = symbolsCount.ContainsKey(ch) ? symbolsCount[ch] + 1 : 1;
+            }
+
+            foreach (var (ch, count) in symbolsCount)
+            {
+                availableLeaves.Add(ch.ToString(), count);
+            }
         }
 
         private string DecodeResult(string data)
@@ -46,23 +58,20 @@ namespace Archivers
             return builder.ToString();
         }
 
-        private string CalculateResult()
+        private string CalculateResult(string data)
         {
             EncodeSymbols();
             var builder = new StringBuilder();
-            foreach (var ch in input)
-            {
+            foreach (var ch in data)
                 builder.Append(symbolCodes[ch]);
-            }
+
             return builder.ToString();
         }
 
         private void EncodeSymbols()
         {
             while (availableLeaves.Count > 1)
-            {
-                NewMethod();
-            }
+                CreateCodeForSymbols();
 
             foreach (var encoding in symbolCodes)
             {
@@ -71,41 +80,28 @@ namespace Archivers
                     encode = new string(encode.Reverse().ToArray());
                 symbolCodes[encoding.Key] = encode;
                 codeSymbols.Add(encode, encoding.Key);
-            }               
+            }
         }
 
-        private void NewMethod()
+        private void CreateCodeForSymbols()
         {
             var toMerge = availableLeaves.OrderBy(leaf => leaf.Value).Take(2);
             var newLeafKey = "";
             var newLeafValue = 0;
 
             var index = 0;
-            foreach (var leaf in toMerge)
+            foreach (var (key, value) in toMerge)
             {
-                foreach (var ch in leaf.Key)
+                foreach (var ch in key)
                     symbolCodes[ch] += index.ToString();
                 index++;
 
-                newLeafKey += leaf.Key;
-                newLeafValue += leaf.Value;
-                availableLeaves.Remove(leaf.Key);
+                newLeafKey += key;
+                newLeafValue += value;
+                availableLeaves.Remove(key);
             }
+
             availableLeaves.Add(newLeafKey, newLeafValue);
-        }
-
-        private void CalculateFrequency(string data)
-        {
-            foreach (var ch in data)
-            {
-                symbolCodes.TryAdd(ch, "");
-                symbolsCount[ch] = symbolsCount.ContainsKey(ch) ? symbolsCount[ch] + 1 : 1;
-            }
-
-            foreach (var counts in symbolsCount)
-            {
-                availableLeaves.Add(counts.Key.ToString(), counts.Value);
-            }
         }
     }
 }
