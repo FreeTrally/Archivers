@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Archivers
+namespace Archivers.Huffman
 {
-    public class Huffman : IArchiver
+    public class HuffmanOld
     {
         private readonly Dictionary<char, string> symbolCodes = new();
         private readonly Dictionary<string, char> codeSymbols = new();

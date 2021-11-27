@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace Archivers
 {
-    public class LZW
+    public class LZWArchiever : IArchiver
     {
         public string Compress(string uncompressed)
         {
@@ -84,6 +85,47 @@ namespace Archivers
             for (var i = 0; i < 256; i++)
                 dict.Add(i, ((char)i).ToString());
             return dict;
+        }
+
+        public void CompressFile(string filename, string fileOutName, out string filePath)
+        {
+            Stream ifStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
+            Stream ofStream = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);           
+
+            var array = new byte[ifStream.Length];
+            ifStream.Read(array, 0, array.Length);
+            var entry = Encoding.Default.GetString(array);
+            var compressed = Compress(entry);
+            ofStream.Write(compressed.Select(el => (byte)el).ToArray(), 0, compressed.Length);
+            var originalL = ifStream.Length;
+            var compressedL = ofStream.Length;
+            ifStream.Close();
+            ofStream.Close();
+            
+            var coef = (double) originalL / compressedL;
+            Console.WriteLine($"Длина изначальная = {originalL}");
+            Console.WriteLine($"Длина сжатая = {compressedL}");
+            Console.WriteLine($"Коэффициент сжатия = {coef}");
+
+            filePath = fileOutName;
+        }
+
+        public void DecompressFile(string filename, string fileOutName, out string filePath)
+        {
+            Stream ifStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
+            Stream ofStream = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);
+
+            var array = new byte[ifStream.Length];
+            ifStream.Read(array, 0, array.Length);
+            var entry = Encoding.Default.GetString(array);
+
+            var decompressed = Decompress(entry);
+            var arrayD = Encoding.Default.GetBytes(decompressed);
+            ofStream.Write(arrayD, 0, arrayD.Length);
+            ifStream.Close();
+            ofStream.Close();
+
+            filePath = fileOutName;
         }
     }
 }

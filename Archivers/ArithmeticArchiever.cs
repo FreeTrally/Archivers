@@ -18,7 +18,7 @@ namespace Archivers
         }
     }
 
-    public class ArithmeticArchiever : IArchiver
+    public class ArithmeticArchiever
     {
         private HashSet<char> symbols = new();
         private Dictionary<char, Borders> symbolsFrequency = new();

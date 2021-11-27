@@ -1,20 +1,21 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Archivers;
+using Archivers.Huffman;
 using NUnit.Framework;
 
 namespace ArchiversTests
 {
-    public class LZWTests
+    public class HuffmanTests
     {
         private IArchiver archiever;
 
         [SetUp]
         public void Setup()
         {
-            archiever = new LZWArchiever();
+            archiever = new HuffmanArchiever();
         }
 
         [Test]
