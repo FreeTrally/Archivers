@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -13,57 +14,51 @@ namespace Archivers.Huffman
 
         public static void Compress(string inputFile, string outputFile, out string filePath)
         {
-            try
-            {
-                Stream ifStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
-                Stream ofStream = new FileStream(outputFile, FileMode.Create, FileAccess.ReadWrite);
-                var crc = new CyclicRedundancyCheck();
+            var input = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+            var output = new FileStream(outputFile, FileMode.Create, FileAccess.ReadWrite);
+            var crc = new CyclicRedundancyCheck();
 
-                ofStream.Write(sign, 0, sign.Length);
-                for (var i = 0; i < 12; i++)
-                    ofStream.WriteByte(0x0);
+            output.Write(sign, 0, sign.Length);
+            for (var i = 0; i < 12; i++)
+                output.WriteByte(0x0);
 
-                var compressor = new Thread(o => Huff(ifStream, ofStream, val => crc.UpdateByte((byte)val)));
-                compressor.Start();
+            var compressor = new Thread(o => Huff(input, output, val => crc.UpdateByte((byte)val)));
+            compressor.Start();
 
-                while (compressor.IsAlive)
-                    Thread.Sleep(100);
+            while (compressor.IsAlive)
+                Thread.Sleep(100);
 
-                ofStream.Seek(4, SeekOrigin.Begin);
-                var buffer = BitConverter.GetBytes(ofStream.Length);
-                ofStream.Write(buffer, 0, buffer.Length);
+            output.Seek(4, SeekOrigin.Begin);
+            var buffer = BitConverter.GetBytes(output.Length);
+            output.Write(buffer, 0, buffer.Length);
 
-                var originalL = ifStream.Length;
-                var compressedL = ofStream.Length;
-                ifStream.Close();
-                ofStream.Close();
+            var originalL = input.Length;
+            var compressedL = output.Length;
+            input.Close();
+            output.Close();
 
-                var coef = (double)originalL / compressedL;
-                Console.WriteLine($"Длина изначальная = {originalL}");
-                Console.WriteLine($"Длина сжатая = {compressedL}");
-                Console.WriteLine($"Коэффициент сжатия = {coef}");
-                filePath = Path.GetFullPath(outputFile);
-            }
-            catch (Exception)
-            {
-                filePath = string.Empty;
-                throw;
-            }
+            var coef = (double)originalL / compressedL;
+            Debug.WriteLine("");
+            Debug.WriteLine($"Длина изначальная = {originalL}");
+            Debug.WriteLine($"Длина сжатая = {compressedL}");
+            Debug.WriteLine($"Коэффициент сжатия = {coef}");
+            Debug.WriteLine("");
+            filePath = Path.GetFullPath(outputFile);
         }
 
-        private static void Huff(Stream sin, Stream sout, UpdateCrc callback)
+        private static void Huff(Stream input, Stream output, UpdateCrc callback)
         {
-            var t = new Tree();
+            var tree = new HuffmanTree();
             int rd, i, tmp;
             Stack<int> ret;
-            var bw = new BitHandler(sout, true);
-            while ((rd = sin.ReadByte()) != -1)
+            var bw = new BitHandler(output, true);
+            while ((rd = input.ReadByte()) != -1)
             {
                 tmp = rd;
                 callback((byte)tmp);
-                if (!t.Contains(rd))
+                if (!tree.Contains(rd))
                 {
-                    ret = t.GetCode(257);
+                    ret = tree.GetCode(257);
                     while (ret.Count > 0)
                         bw.WriteBit(ret.Pop());
                     for (i = 0; i < 8; i++)
@@ -71,18 +66,18 @@ namespace Archivers.Huffman
                         bw.WriteBit((int)(rd & 0x80));
                         rd <<= 1;
                     }
-                    t.Update(tmp);
+                    tree.Update(tmp);
                 }
                 else
                 {
-                    ret = t.GetCode(tmp);
+                    ret = tree.GetCode(tmp);
                     while (ret.Count > 0)
                         bw.WriteBit(ret.Pop());
-                    t.Update(tmp);
+                    tree.Update(tmp);
                 }
             }
 
-            ret = t.GetCode(256);
+            ret = tree.GetCode(256);
             while (ret.Count > 0)
             {
                 bw.WriteBit(ret.Pop());
@@ -91,61 +86,54 @@ namespace Archivers.Huffman
 
         public static void Decompress(string inputFile, string outputFile, out string filePath)
         {
-            Stream ifstream = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
-            Stream ofstream = new FileStream(outputFile, FileMode.Create, FileAccess.ReadWrite);
-            CyclicRedundancyCheck crcCalc = new CyclicRedundancyCheck();
+            var input = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+            var output = new FileStream(outputFile, FileMode.Create, FileAccess.ReadWrite);
+            var crc = new CyclicRedundancyCheck();
             uint crc_old, crc_new;
 
             for (int i = 0; i < sign.Length; i++)
-                if (ifstream.ReadByte() != sign[i])
+                if (input.ReadByte() != sign[i])
                 {
-                    ifstream.Close();
-                    ofstream.Close();
+                    input.Close();
+                    output.Close();
                     throw new IOException("The supplied file is not a valid huff archive");
                 }
 
             byte[] buffer = new byte[8];
-            ifstream.Read(buffer, 0, 8);
+            input.Read(buffer, 0, 8);
             long size = BitConverter.ToInt64(buffer, 0);
-            if (size != ifstream.Length)
+            if (size != input.Length)
             {
-                ifstream.Close();
-                ofstream.Close();
+                input.Close();
+                output.Close();
                 throw new IOException("Invalid file length");
             }
 
-            ifstream.Read(buffer, 0, 4);
+            input.Read(buffer, 0, 4);
             crc_old = BitConverter.ToUInt32(buffer, 0);
 
             var myDecompressor = new Thread(o =>
            {
-               try
-               {
-                   UnHuff(ifstream, ofstream, x => crcCalc.UpdateByte((byte)x));
-               }
-               catch (Exception e)
-               {
-                   Console.WriteLine("\n" + e.Message);
-               }
+               UnHuff(input, output, x => crc.UpdateByte((byte)x));
            });
             myDecompressor.Start();
             while (myDecompressor.IsAlive)
                 Thread.Sleep(100);
 
-            crc_new = crcCalc.Get();
-            ofstream.Close();
-            ifstream.Close();
+            crc_new = crc.Get();
+            output.Close();
+            input.Close();
             filePath = Path.GetFullPath(outputFile);
         }
 
         public static void UnHuff(Stream InStream, Stream OutStream, UpdateCrc callback)
         {
             int i = 0, count = 0, sym;
-            Tree t = new Tree();
+            HuffmanTree t = new HuffmanTree();
             BitHandler bitIO = new BitHandler(InStream, false);
             while ((i = bitIO.ReadBit()) != 2)
             {
-                if ((sym = t.DecodeBinary(i)) != Tree.CharIsEof)
+                if ((sym = t.DecodeBinary(i)) != HuffmanTree.CharIsEof)
                 {
                     OutStream.WriteByte((byte)sym);
                     callback(sym);

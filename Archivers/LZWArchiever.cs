@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -31,7 +30,6 @@ namespace Archivers
                 }
             }
 
-            // write remaining output if necessary
             if (!string.IsNullOrEmpty(current))
                 compressed.Add(dictionary[current]);
 
@@ -62,7 +60,6 @@ namespace Archivers
 
                 decompressed.Append(entry);
 
-                // new sequence; add it to the dictionary
                 dict.Add(dict.Count, workingString + entry?.FirstOrDefault());
 
                 workingString = entry;
@@ -89,41 +86,43 @@ namespace Archivers
 
         public void CompressFile(string filename, string fileOutName, out string filePath)
         {
-            Stream ifStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
-            Stream ofStream = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);           
+            var input = new FileStream(filename, FileMode.Open, FileAccess.Read);
+            var output = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);           
 
-            var array = new byte[ifStream.Length];
-            ifStream.Read(array, 0, array.Length);
+            var array = new byte[input.Length];
+            input.Read(array, 0, array.Length);
             var entry = Encoding.Default.GetString(array);
             var compressed = Compress(entry);
-            ofStream.Write(compressed.Select(el => (byte)el).ToArray(), 0, compressed.Length);
-            var originalL = ifStream.Length;
-            var compressedL = ofStream.Length;
-            ifStream.Close();
-            ofStream.Close();
-            
-            var coef = (double) originalL / compressedL;
-            Console.WriteLine($"Длина изначальная = {originalL}");
-            Console.WriteLine($"Длина сжатая = {compressedL}");
-            Console.WriteLine($"Коэффициент сжатия = {coef}");
+            output.Write(compressed.Select(el => (byte)el).ToArray(), 0, compressed.Length);
+            var originalL = input.Length;
+            var compressedL = output.Length;
+            input.Close();
+            output.Close();
+
+            var coef = (double)originalL / compressedL;
+            Debug.WriteLine("");
+            Debug.WriteLine($"Длина изначальная = {originalL}");
+            Debug.WriteLine($"Длина сжатая = {compressedL}");
+            Debug.WriteLine($"Коэффициент сжатия = {coef}");
+            Debug.WriteLine("");
 
             filePath = fileOutName;
         }
 
         public void DecompressFile(string filename, string fileOutName, out string filePath)
         {
-            Stream ifStream = new FileStream(filename, FileMode.Open, FileAccess.Read);
-            Stream ofStream = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);
+            var input = new FileStream(filename, FileMode.Open, FileAccess.Read);
+            var output = new FileStream(fileOutName, FileMode.Create, FileAccess.ReadWrite);
 
-            var array = new byte[ifStream.Length];
-            ifStream.Read(array, 0, array.Length);
+            var array = new byte[input.Length];
+            input.Read(array, 0, array.Length);
             var entry = Encoding.Default.GetString(array);
 
             var decompressed = Decompress(entry);
             var arrayD = Encoding.Default.GetBytes(decompressed);
-            ofStream.Write(arrayD, 0, arrayD.Length);
-            ifStream.Close();
-            ofStream.Close();
+            output.Write(arrayD, 0, arrayD.Length);
+            input.Close();
+            output.Close();
 
             filePath = fileOutName;
         }

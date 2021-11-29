@@ -27,7 +27,7 @@ namespace Archivers.Huffman
         INT,
     }
 
-    public class Tree
+    public class HuffmanTree
     {
         public const int CharIsEof = -1;
         private Node root;
@@ -116,7 +116,7 @@ namespace Archivers.Huffman
             } while (temp != null);
         }
 
-        public Tree()
+        public HuffmanTree()
         {
 
             root = new Node(NodeType.INT, 258, 0, 516);
@@ -139,47 +139,40 @@ namespace Archivers.Huffman
         bool InNyt = false;
         public int DecodeBinary(int bit)
         {
-            try
+            if (ptr == null) ptr = root;
+            if (InNyt)
             {
-                if (ptr == null) ptr = root;
-                if (InNyt)
+                _tempcode <<= 1;
+                _tempcode |= bit;
+                _count++;
+                if (_count == 8)
                 {
-                    _tempcode <<= 1;
-                    _tempcode |= bit;
-                    _count++;
-                    if (_count == 8)
-                    {
-                        Update(_tempcode);
-                        int sym = _tempcode;
-                        _tempcode = _count = 0;
-                        InNyt = false;
-                        return sym;
-                    }
-                    return CharIsEof;
-                }
-
-                if (bit == 1) ptr = ptr.right;
-                else ptr = ptr.left;
-
-                if (ptr.type == NodeType.NYT && ptr.sym == 257)
-                {
-                    ptr = root;
-                    InNyt = true;
-                    return CharIsEof;
-                }
-                if (ptr.type == NodeType.SYM)
-                {
-                    int sym = ptr.sym;
-                    Update(sym);
-                    ptr = root;
+                    Update(_tempcode);
+                    int sym = _tempcode;
+                    _tempcode = _count = 0;
+                    InNyt = false;
                     return sym;
                 }
                 return CharIsEof;
             }
-            catch (NullReferenceException)
+
+            if (bit == 1) ptr = ptr.right;
+            else ptr = ptr.left;
+
+            if (ptr.type == NodeType.NYT && ptr.sym == 257)
             {
-                throw new Exception("Corrupted Huffman sequence supplied for decoding");
+                ptr = root;
+                InNyt = true;
+                return CharIsEof;
             }
+            if (ptr.type == NodeType.SYM)
+            {
+                int sym = ptr.sym;
+                Update(sym);
+                ptr = root;
+                return sym;
+            }
+            return CharIsEof;
         }
 
         public Stack<int> GetCode(int sym)
